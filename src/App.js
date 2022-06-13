@@ -11,28 +11,36 @@ function App() {
   };
   
   const handleLogin = async (googleData) => {
-    console.log('googleData', googleData);
-    const res = await fetch('http://localhost:3001/login-with-google', {
-      method: 'POST',
-      body: JSON.stringify({
-        token: googleData.tokenObj,
-        tokenId: googleData.tokenId,
-        accessToken: googleData.accessToken,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await res.json();
-    if (data.loggedIn) {
-      setProfileData(data.profile);
-      setLoginData({ token: googleData.tokenId });
-      localStorage.setItem('loginData', JSON.stringify(data));
-    } else {
-      setProfileData({});
-      setLoginData({});
+    try {
+      const body = JSON.stringify({
+        credentials: googleData.tokenObj,
+        email: googleData.profileObj.email,
+      });
+      const res = await fetch('http://localhost:8080/v1/auths/login-with-google', {
+        method: 'POST',
+        body,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json();
+      if (data.accessToken) {
+        setProfileData({
+          email: data.email,
+          picture: data.photo,
+          name: data.name,
+        });
+        setLoginData({ token: data.accessToken });
+        localStorage.setItem('loginData', JSON.stringify(data));
+      } else {
+        setProfileData({});
+        setLoginData({});
+      }
+    } catch (e) {
+      console.log(e);
+      throw e;
     }
+    
   };
 
   const handleLogout = () => {
@@ -52,7 +60,7 @@ function App() {
         </div>
       ) : (
         <GoogleLogin
-          clientId="xxxxxxxxxxxx.apps.googleusercontent.com"
+          clientId="1071906176247-r40lprs44tr9364ic4gre0i97358vcsi.apps.googleusercontent.com"
           buttonText="Login"
           onSuccess={handleLogin}
           onFailure={handleFailure}
